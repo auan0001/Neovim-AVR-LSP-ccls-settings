@@ -1,0 +1,61 @@
+#+Title: Neovim LSP (ccls) and coc settings for AVR development
+This is a short guide to getting AVR header completion on a Linux system.  Note that I have never tried to compile using clang (I use avr-gcc in a separate Makefile).
+
+Minimal Neovim LSP configuration
+
+#+begin_src lua
+lua << EOF
+require "lspconfig".ccls.setup {
+    init_options = {documentFormatting = true},
+    settings = {
+        rootMarkers = {".ccls",".git/"},
+        languages = {
+            lua = {
+                {formatCommand = "lua-format -i", formatStdin = true}
+            }
+        }
+    }
+}
+EOF
+#+end_src
+
+If using coc, it can be provided with include paths as extra arguments. The coc config file is easiest found by typing ~:CocConfig~ in Neovim.
+
+#+begin_src json
+{
+    "languageserver": {
+        "ccls": {
+            "command": "ccls",
+            "filetypes": ["c", "cpp", "objc", "objcpp"],
+            "rootPatterns": [".ccls", "compile_commands.json", ".vim/", ".git/", ".hg/"],
+            "initializationOptions": {
+                "cache": {
+                    "directory": "/tmp/ccls" 
+                },
+                "clang": {
+                    "extraArgs": [
+                        "-isystem/usr/lib/clang/13.0.0/include",
+                        "-isystem/usr/local/include",
+                        "-isystem/usr/include"
+                    ],
+                    "resourceDir": "/usr/lib/clang/13.0.0"
+                }
+            }
+        }
+    }
+}
+#+end_src
+One problem with this configuration on my machine is that the LSP crashes when displaying ~-Wall~.  This is my ~.ccls~ file in the project root, in this case using an ATMega328p
+#+begin_src bash
+  clang
+  -target
+  avr
+  -mmcu=atmega328p
+  -nostdinc
+  -ffreestanding
+  -isystem/usr/avr/include
+  %h -x
+  %h c-header
+#+end_src
+
+Some versions of ccls does not load this file properly if there are trailing spaces or an empty line at EOF.
